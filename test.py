@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import numpy as np
 import argparse
+import sys
 
 from tqdm import tqdm
 from engine import Engine
@@ -18,7 +19,7 @@ from transformers import get_linear_schedule_with_warmup
 
 def run(model_path,model_type):
 
-    state_dict = torch.load(model_path)
+    state_dict = torch.load(model_path,map_location='mps')
     if model_type.lower() == 'bert':
         print("Picking Bert-Uncased Model")
         model = BERTBaseUncasedClfHead()
