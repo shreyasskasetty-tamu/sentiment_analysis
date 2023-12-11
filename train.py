@@ -23,6 +23,39 @@ def save_preprocessed_data(data, filepath):
 def load_preprocessed_data(filepath):
     return pd.read_csv(filepath)
 
+def train(epoch, train_data_loader, engine, training_accuracy, training_loss, optimizer, scheduler):
+    # Training loop
+    final_loss = 0
+    final_accuracy = 0
+    with tqdm(enumerate(train_data_loader), total=len(train_data_loader), unit="Batch") as data_loader_tqdm:
+        data_loader_tqdm.set_description(f"Epoch {epoch}")
+        train_loss, train_accuracy = engine.train_fn(data_loader_tqdm, optimizer, scheduler)
+        training_accuracy.append(train_accuracy)
+        training_loss.append(train_loss)
+    print(f"\nEpoch {epoch+1}/{config.EPOCHS}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}")
+
+def evaluate(epoch, valid_data_loader, engine, validation_accuracy,best_accuracy, model):
+
+    with tqdm(enumerate(valid_data_loader), total=len(valid_data_loader)) as data_loader_tqdm:
+        outputs, targets = engine.eval_fn(data_loader_tqdm)
+
+    # Convert outputs to numpy arrays and then to class indices
+    predicted_labels = np.argmax(outputs, axis=1)
+    # Convert targets to numpy arrays
+    targets = np.array(targets)
+
+    accuracy = metrics.accuracy_score(targets, predicted_labels)
+    validation_accuracy.append(accuracy)
+    print(f"Validation - Epoch: {epoch} Accuracy: {100. * accuracy}%")
+    if accuracy > best_accuracy:
+        model_path = config.MODEL_PATH
+        model_dir = os.path.dirname(model_path)
+
+        if not os.path.exists(model_dir):
+            os.makedirs(model_dir)
+        torch.save(model.state_dict(), config.MODEL_PATH)
+        best_accuracy = accuracy
+
 def run(model_type):
     warnings.filterwarnings('ignore')
 
@@ -79,63 +112,40 @@ def run(model_type):
         print("Model not supported")
         sys.exit(1)
 
-    model.to(device)
+        model.to(device)
     model.freeze_base_model()
     param_optimizer = list(model.named_parameters())
-    no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
-    optimizer_parameters = [
-        {
-            "params": [
-                p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
-            ],
-            "weight_decay": 0.001,
-        },
-        {
-            "params": [
-                p for n, p in param_optimizer if any(nd in n for nd in no_decay)
-            ],
-            "weight_decay": 0.0,
-        },
-    ]
 
     num_train_steps = int(len(df_train) / config.TRAIN_BATCH_SIZE * config.EPOCHS)
-    optimizer = AdamW(optimizer_parameters, lr=3e-5)
+    optimizer = torch.optim.AdamW(model.parameters(),lr=3e-4)
     scheduler = get_linear_schedule_with_warmup(
         optimizer, num_warmup_steps=0, num_training_steps=num_train_steps
     )
 
     engine = Engine(model,device,df_train.sentiment.values,model_type.lower())
     best_accuracy = 0
-    
+    training_accuracy = []
+    training_loss = []
+    validation_accuracy = []
+    validation_loss = []
+
     for epoch in range(config.EPOCHS):
-        # Training loop
-        final_loss = 0
-        final_accuracy = 0
-        with tqdm(enumerate(train_data_loader), total=len(train_data_loader), unit="Batch") as data_loader_tqdm:
-            data_loader_tqdm.set_description(f"Epoch {epoch}")
-            train_loss, train_accuracy = engine.train_fn(data_loader_tqdm, optimizer, scheduler)
+        train(epoch, train_data_loader, engine, training_accuracy, training_loss, optimizer, scheduler)
+        evaluate(epoch, valid_data_loader, engine, validation_accuracy,best_accuracy, model)
 
-        print(f"Epoch {epoch+1}/{config.EPOCHS}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}")
+    # Gradually unfreeze and train
+    model.unfreeze_layers(12)
+    print(f"Unfreezing last {12} layers of RoBERTa.")
+    optimizer = torch.optim.AdamW(model.parameters(),lr=3e-6)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=0, num_training_steps=num_train_steps
+    )
 
-        with tqdm(enumerate(valid_data_loader), total=len(valid_data_loader)) as data_loader_tqdm:
-            outputs, targets = engine.eval_fn(data_loader_tqdm)
-        
-        # Convert outputs to numpy arrays and then to class indices
-        predicted_labels = np.argmax(outputs, axis=1)
+    for epoch in range(8):
+        train(epoch, train_data_loader, engine, training_accuracy, training_loss, optimizer, scheduler)
+        evaluate(epoch, valid_data_loader, engine, validation_accuracy,best_accuracy,model)
 
-        # Convert targets to numpy arrays
-        targets = np.array(targets)
-
-        accuracy = metrics.accuracy_score(targets, predicted_labels)
-        print(f"Validation - Epoch: {epoch} Accuracy: {100. * accuracy}%")
-        if accuracy > best_accuracy:
-            model_path = config.MODEL_PATH
-            model_dir = os.path.dirname(model_path)
-
-            if not os.path.exists(model_dir):
-                os.makedirs(model_dir)
-            torch.save(model.state_dict(), config.MODEL_PATH)
-            best_accuracy = accuracy
+    return training_accuracy, training_loss, validation_accuracy
             
 
 if __name__ == "__main__":

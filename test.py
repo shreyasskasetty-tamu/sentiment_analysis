@@ -31,6 +31,8 @@ def run(model_path,model_type):
         sys.exit(1)
     model.load_state_dict(state_dict)
 
+    model.load_state_dict(state_dict)
+
     warnings.filterwarnings('ignore')
     #Read the training dataset from the CSV file
     test_raw_dataset = pd.read_csv(config.TEST_FILE).fillna("none")
@@ -54,9 +56,11 @@ def run(model_path,model_type):
     test_data_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=config.TEST_BATCH_SIZE, num_workers=4
     )
-    
-    engine = Engine(model, config.DEVICE,df_test.sentiment.values,model_type.lower())
-    engine.test_eval_fn(test_data_loader)
+    class_names = ['Negative', 'Neutral', 'Positive']
+    engine = Engine(model,config.DEVICE,df_test.sentiment.values,model_type.lower())
+    targets, outputs = engine.test_eval_fn(test_data_loader)
+    engine.plot_confusion_matrix(targets, outputs, class_names)
+    engine.plot_roc_curve(targets, outputs, len(class_names))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate a model.')

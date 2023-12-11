@@ -1,89 +1,111 @@
 import config
 import transformers
 import torch.nn as nn
+import torch
 
-
+# Define a class for a classification head on top of BERTBaseUncased
 class BERTBaseUncasedClfHead(nn.Module):
     def __init__(self):
         super(BERTBaseUncasedClfHead, self).__init__()
+        # Load the pretrained BERT model from the specified path in the config
         self.bert = transformers.BertModel.from_pretrained(config.BERT_PATH)
-        # New dense layer
-        self.dense = nn.Linear(768, 512)
+        
+        # Add a new dense (fully connected) layer after BERT's output
+        self.dense = nn.Linear(768, 512)  # 768 is BERT's hidden size, 512 is the output size
 
-        # Layer normalization
+        # Layer normalization to stabilize the learning process
         self.layer_norm = nn.LayerNorm(512)
 
-        # Dropout for the new dense layer
+        # Dropout layer to prevent overfitting
         self.dropout = nn.Dropout(0.3)
 
-        # Output layer remains the same
+        # Output layer for classification (3 classes)
         self.out = nn.Linear(512, 3)
-    
+
     def freeze_base_model(self):
-        # Freeze all parameters in the BERT model
+        # Method to freeze the parameters of the BERT model to prevent them from being updated during training
         for param in self.bert.parameters():
             param.requires_grad = False
-            
 
     def forward(self, ids, mask, token_type_ids):
+        # Forward pass through BERT model
         _, pooled_output = self.bert(ids, attention_mask=mask, token_type_ids=token_type_ids, return_dict=False)
 
-        # Passing through the new dense layer
+        # Pass BERT's output through the additional dense layer
         x = self.dense(pooled_output)
 
-        # Applying layer normalization
+        # Apply layer normalization
         x = self.layer_norm(x)
 
-        # Applying dropout
+        # Apply dropout
         x = self.dropout(x)
 
-        # Final output layer
+        # Pass through the output layer to get final logits
         output = self.out(x)
         return output
 
-
-class RoBERTaGRUModel(nn.Module):
-    def __init__(self, gru_hidden_size=512, num_classes=3):
-        super(RoBERTaGRUModel, self).__init__()
+# Define a class for a classifier that uses RoBERTa model with a GRU layer
+class RobertaGRUClassifier(nn.Module):
+    def __init__(self):
+        super(RobertaGRUClassifier, self).__init__()
+        # Load the pretrained RoBERTa model
         self.roberta = transformers.RobertaModel.from_pretrained('roberta-base')
 
-        # GRU Layer
-        # RoBERTa outputs 768 features for each token in the sequence
-        self.gru = nn.GRU(input_size=768, hidden_size=gru_hidden_size, num_layers=1, batch_first=True)
+        # GRU layer for processing sequence data
+        self.gru = nn.GRU(input_size=768, hidden_size=256, num_layers=1, batch_first=True)
 
-        # Batch Normalization and Dropout can still be applied here
-        self.batch_norm = nn.BatchNorm1d(gru_hidden_size)
-        self.dropout = nn.Dropout(0.5)
+        # Batch normalization for stabilizing learning
+        self.batch_norm = nn.BatchNorm1d(256)
 
-        # Adjust the input size of the first dense layer to match the GRU output
-        self.dense1 = nn.Linear(gru_hidden_size, 256)
-        self.dense2 = nn.Linear(256, num_classes)  # Adjust num_classes as necessary
-    
+        # Dropout layer to prevent overfitting
+        self.dropout = nn.Dropout(0.3)
+
+        # Flatten layer to reshape data for dense layer
+        self.flatten = nn.Flatten()
+
+        # Dense layers for final classification
+        self.dense1 = nn.Linear(256, 128)  # Reduce dimension from 256 to 128
+        self.dense2 = nn.Linear(128, 3)    # Final classification layer, 3 classes
+
     def freeze_base_model(self):
-        # Freeze all parameters in the BERT model
+        # Method to freeze the parameters of the RoBERTa model
         for param in self.roberta.parameters():
             param.requires_grad = False
 
-    def forward(self, input_ids, attention_mask):
-        # Get the sequence output from RoBERTa
-        sequence_output = self.roberta(input_ids, attention_mask=attention_mask).last_hidden_state
+    def unfreeze_layers(self, last_n_layers):
+        # Method to unfreeze the last `last_n_layers` layers of the RoBERTa model
+        # Freeze all layers first
+        for param in self.roberta.parameters():
+            param.requires_grad = False
 
-        # GRU layer expects inputs of shape (batch, seq_len, input_size)
+        # Unfreeze the specified number of layers
+        for layer in self.roberta.encoder.layer[-last_n_layers:]:
+            for param in layer.parameters():
+                param.requires_grad = True
+
+    def forward(self, input_ids, attention_mask):
+        # Forward pass through the RoBERTa model
+        roberta_output = self.roberta(input_ids=input_ids, attention_mask=attention_mask)
+        sequence_output = roberta_output.last_hidden_state
+
+        # Pass the output through the GRU layer
         gru_output, _ = self.gru(sequence_output)
-        
-        # Applying batch normalization and dropout to the output of the last time step
         gru_last_output = gru_output[:, -1, :]
-        
-        # Apply batch normalization only if batch size > 1
+
+        # Apply batch normalization if batch size is greater than 1
         if gru_last_output.size(0) > 1:
             normalized_output = self.batch_norm(gru_last_output)
         else:
-            normalized_output = gru_last_output 
+            normalized_output = gru_last_output
 
+        # Apply dropout
         dropout_output = self.dropout(normalized_output)
-        
-        #Dense layers for classification
-        dense_output = self.dense1(dropout_output)
+
+        # Flatten the output for dense layer input
+        flattened_output = self.flatten(dropout_output)
+
+        # Pass through dense layers
+        dense_output = torch.relu(self.dense1(flattened_output))
         logits = self.dense2(dense_output)
 
         return logits

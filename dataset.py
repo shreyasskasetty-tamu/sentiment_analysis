@@ -5,33 +5,43 @@ import nltk
 import regex as re
 import pandas as pd
 import nlpaug.augmenter.word as naw
-import warnings
 
 from sklearn.preprocessing import LabelEncoder
 from nltk.corpus import stopwords
 from tqdm import tqdm
 
-# TODO: Remove these two functions
 def save_preprocessed_data(data, filepath):
+    # Function to save preprocessed data to a CSV file
+    # data: DataFrame containing preprocessed data
+    # filepath: Location where the CSV file will be saved
     data.to_csv(filepath, index=False)
 
 def load_preprocessed_data(filepath):
+    # Function to load preprocessed data from a CSV file
+    # filepath: Location of the CSV file to be loaded
     return pd.read_csv(filepath)
 
 class BERTDataset:
+    # A custom dataset class for BERT model
     def __init__(self, review, target):
+        # Constructor for the BERTDataset class
+        # review: List or series of review texts
+        # target: List or series of target labels
         self.review = review
         self.target = target
-        self.tokenizer = config.BERT_TOKENIZER
-        self.max_len = config.MAX_LEN
+        self.tokenizer = config.BERT_TOKENIZER  # Tokenizer specific to BERT
+        self.max_len = config.MAX_LEN  # Maximum sequence length
 
     def __len__(self):
+        # Returns the length of the dataset
         return len(self.review)
 
     def __getitem__(self, item):
+        # Method to get the ith item from the dataset
         review = str(self.review[item])
-        review = " ".join(review.split())
+        review = " ".join(review.split())  # Clean and split the review text
 
+        # Tokenize the review
         inputs = self.tokenizer.encode_plus(
             review,
             None,
@@ -41,10 +51,13 @@ class BERTDataset:
             truncation=True
         )
 
+        # Extract tokens, attention masks, and token type IDs from tokenizer output
         ids = inputs["input_ids"]
         mask = inputs["attention_mask"]
         token_type_ids = inputs["token_type_ids"]
         target = self.target[item]
+
+        # Return a dictionary of tensors for model input
         return {
             "ids": torch.tensor(ids, dtype=torch.long),
             "mask": torch.tensor(mask, dtype=torch.long),
@@ -53,19 +66,26 @@ class BERTDataset:
         }
         
 class RoBERTaDataset:
+    # A custom dataset class for RoBERTa model
     def __init__(self, review, target):
+        # Constructor for the RoBERTaDataset class
+        # review: List or series of review texts
+        # target: List or series of target labels
         self.review = review
         self.target = target
-        self.tokenizer = config.ROBERTA_TOKENIZER  # Ensure this is a RoBERTa tokenizer
-        self.max_len = config.MAX_LEN
+        self.tokenizer = config.ROBERTA_TOKENIZER  # Tokenizer specific to RoBERTa
+        self.max_len = config.MAX_LEN  # Maximum sequence length
 
     def __len__(self):
+        # Returns the length of the dataset
         return len(self.review)
 
     def __getitem__(self, item):
+        # Method to get the ith item from the dataset
         review = str(self.review[item])
-        review = " ".join(review.split())
+        review = " ".join(review.split())  # Clean and split the review text
 
+        # Tokenize the review
         inputs = self.tokenizer.encode_plus(
             review,
             None,
@@ -75,12 +95,13 @@ class RoBERTaDataset:
             truncation=True
         )
 
+        # Extract tokens and attention masks from tokenizer output
+        # Note: RoBERTa does not use token type IDs
         ids = inputs["input_ids"]
         mask = inputs["attention_mask"]
-        # RoBERTa doesn't use token type IDs, so we don't need to include them here
-
         target = self.target[item]
 
+        # Return a dictionary of tensors for model input
         return {
             "ids": torch.tensor(ids, dtype=torch.long),
             "mask": torch.tensor(mask, dtype=torch.long),
@@ -202,19 +223,6 @@ class DatasetPreprocessor:
         # Renaming the columns for clarity
         final_preprocessed_data.columns = ['review', 'sentiment']
         
-        # Data Augmentation
-        # # Assuming train_data is your DataFrame and you want to augment the 'Negative' class
-        # negative_reviews = final_preprocessed_data[final_preprocessed_data['sentiment'] == 'Negative']
-        # augmented_negative_reviews = self.augment_data_roberta(negative_reviews, 'Negative', target_size=20000)
-        
-        # # Data Augmentation
-        # # Assuming train_data is your DataFrame and you want to augment the 'Negative' class
-        # neutral_reviews = final_preprocessed_data[final_preprocessed_data['sentiment'] == 'Neutral']
-        # augmented_neutral_reviews = self.augment_data_roberta(neutral_reviews, 'Neutral', target_size=20000)
-        # downsampled_positive_reviews = final_preprocessed_data[final_preprocessed_data['sentiment'] == 'Positive'].sample(n=20000, random_state=config.RANDOM_STATE)
-        # balanced_data = pd.concat([downsampled_positive_reviews, augmented_negative_reviews, augmented_neutral_reviews])
-        # #Encoding the labels to numerical values
-        
         # Initializing the label encoder
         label_encoder = LabelEncoder()
         
@@ -229,18 +237,3 @@ class DatasetPreprocessor:
         preprocessed_data = final_preprocessed_data[['review', 'sentiment']]
         print("Preprocessing done!")
         return preprocessed_data
-
-#NOTE: Comment the main function which is being used for debugging
-if __name__ == '__main__':
-    warnings.filterwarnings('ignore')
-
-    # Check if preprocessed data exists
-    if os.path.exists(config.PREPROCESSED_DATA_PATH):
-        print("Loading preprocessed data...")
-        dfx = load_preprocessed_data(config.PREPROCESSED_DATA_PATH)
-    else:
-        print("Preprocessing data...")
-        raw_data_df = pd.read_csv(config.TRAINING_FILE)
-        proccessor = DatasetPreprocessor(raw_data_df)
-        dfx = proccessor.preprocess_dataset()
-        save_preprocessed_data(dfx, config.PREPROCESSED_DATA_PATH)

@@ -8,12 +8,12 @@ This project focuses on sentiment analysis of Yelp restaurant reviews using tran
 # Model Details
 
 ## Architecture
-Our project employs the BERT (Bidirectional Encoder Representations from Transformers) and RoBERTa (Robustly Optimized BERT Pretraining Approach) models. These transformer models are renowned for their effectiveness in natural language processing tasks. 
+The project employs the BERT (Bidirectional Encoder Representations from Transformers) and RoBERTa (Robustly Optimized BERT Pretraining Approach) models. These transformer models are renowned for their effectiveness in natural language processing tasks. 
 
 ### BERT Model
-- **Base**: We use the 'bert-base-uncased' variant of BERT as our foundational model.
+- **Base**: We use the 'bert-base-uncased' variant of BERT as the foundational model.
 - **Custom Layer**: A dense layer with 512 neurons is added to the base model, followed by layer normalization and a dropout rate of 0.3.
-- **Output Layer**: The model concludes with a three-unit output layer, aligning with our classification categories.
+- **Output Layer**: The model concludes with a three-unit output layer, aligning with the classification categories.
 
 ### RoBERTa-GRU Hybrid Model
 - **Integration of RoBERTa and GRU**: This model synergizes the RoBERTa transformer with Gated Recurrent Units (GRU). RoBERTa handles the embedding of texts, while GRU layers manage long-range dependencies and mitigate the vanishing gradient issue.
