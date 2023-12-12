@@ -181,16 +181,24 @@ class Engine:
         test_accuracy = accuracy_score(all_targets, all_predictions)
         print(f'Test Accuracy: {test_accuracy:.2f}')
 
+        # Calculate Per-Class Accuracy
+        print('Per-Class Accuracy:')
+        unique_labels = set(all_targets)
+        for label in unique_labels:
+            label_targets = [1 if t == label else 0 for t in all_targets]
+            label_predictions = [1 if p == label else 0 for p in all_predictions]
+            acc = accuracy_score(label_targets, label_predictions)
+            print(f'Accuracy for class {label}: {acc}')
+
         # One-hot encode the targets
         num_classes = all_probabilities[0].size
         all_targets_one_hot = label_binarize(all_targets, classes=range(num_classes))
 
         # Calculate AUC for each class
+        print('Per-Class AUC Score:')
         auc_scores = {}
         for i in range(num_classes):
             auc_score = roc_auc_score(all_targets_one_hot[:, i], np.array(all_probabilities)[:, i], multi_class='ovr')
-            auc_scores[f'Class {i} AUC'] = auc_score
+            print(f"AUC Scores for Class {i}:", auc_score)
 
-        print("AUC Scores:", auc_scores)
         return all_targets, all_probabilities
-
