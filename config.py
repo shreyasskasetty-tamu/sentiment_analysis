@@ -3,7 +3,7 @@ import torch
 
 has_gpu = torch.cuda.is_available()
 has_mps = torch.backends.mps.is_built()
-DEVICE = "cuda"
+DEVICE = "cpu"
 RANDOM_STATE = 42
 MAX_LEN = 256
 TRAIN_BATCH_SIZE = 32

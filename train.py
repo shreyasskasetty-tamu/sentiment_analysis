@@ -11,7 +11,7 @@ import sys
 
 from tqdm import tqdm
 from engine import Engine
-from model import BERTBaseUncasedClfHead, RoBERTaGRUModel
+from model import BERTBaseUncasedClfHead, RobertaGRUClassifier
 from sklearn import model_selection
 from sklearn import metrics
 from transformers import AdamW
@@ -107,7 +107,7 @@ def run(model_type):
         model = BERTBaseUncasedClfHead()
     elif model_type.lower() == 'roberta':
         print("Picking Robert-GRU Model")
-        model = RoBERTaGRUModel()
+        model = RobertaGRUClassifier()
     else:
         print("Model not supported")
         sys.exit(1)
