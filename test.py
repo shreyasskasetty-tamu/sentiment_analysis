@@ -6,21 +6,25 @@ import pandas as pd
 import numpy as np
 import argparse
 import sys
-
+import os
 from config import Config
 from engine import Engine
-
+from model import RobertaSimpleClassifier, RobertaGRUClassifier
 
 class Tester:
   
-  def __init__(self, dataset, config, device = 'cuda',base_model_path='/content/drive/MyDrive/Models/'):
+  def __init__(self, dataset, config, device = 'cpu',base_model_path='/content/drive/MyDrive/Models/',model_path=None):
       self.dataset = dataset
       self.config = config
       self.device = torch.device(device)
-      self.model_path = self.generate_model_path(base_model_path)
+      if model_path:
+        self.model_path = model_path
+      else:
+        self.model_path = self.generate_model_path(base_model_path)
   
   def generate_model_path(self,base_model_path):
         # Construct a unique file name based on configuration parameters
+
         file_name = f"model_{self.config.model_type}_lr{self.config.learning_rate}_bs{self.config.train_batch_size}_ep{self.config.epochs}"
         if self.config.unfreeze_layers is not None:
             file_name += f"_unfreeze{self.config.unfreeze_layers}"
@@ -29,16 +33,21 @@ class Tester:
 
         # Combine with the base directory
         model_path = base_model_path +file_name
+
         return model_path
         
   def run_test(self):
-      state_dict = torch.load(self.model_path)
+      if self.device.type == 'cpu':
+          state_dict = torch.load(self.model_path,map_location='cpu')
+      else:
+          state_dict = torch.load(self.model_path)
+
       if self.config.model_type.lower() == 'roberta-simple':
           print("Picking Roberta Simple Classifier Model")
-          model = dataset.RobertaSimpleClassifier()
+          model = RobertaSimpleClassifier()
       elif self.config.model_type.lower() == 'roberta-gru':
           print("Picking Robert-GRU Model")
-          model = dataset.RobertaGRUClassifier()
+          model = RobertaGRUClassifier()
       else:
           print("Model not supported")
           sys.exit(1)
@@ -66,7 +75,7 @@ class Tester:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate a model.')
-    parser.add_argument('-m','--model_path', type=str, required=True, help='Path to the model file.')
+    parser.add_argument('-m','--model_path', type=str, required=False, help='Path to the model file.')
     parser.add_argument('-t','--model_type', type=str, required=True, help='Model Name')
     args = parser.parse_args()
     test_dataset = pd.read_csv(constants.TEST_FILE)
@@ -75,5 +84,12 @@ if __name__ == "__main__":
     balanced_preprocessed_dataset = pd.read_csv(constants.BALANCED_DATASET_PATH)
     config = Config(3e-5, 32,64, 4, 'roberta-gru')
     config.pretty_print()
-    tester = tester = Tester(preprocessed_test_dataset,config)
-    Tester.run_test()
+
+    if args.model_path:
+        if not os.path.exists(args.model_path):
+            print('Invalid Model Path! Path does not exist')
+            sys.exit(-1)
+        tester = tester = Tester(preprocessed_test_dataset,config,model_path=args.model_path)
+    else:
+        tester = tester = Tester(preprocessed_test_dataset,config,base_model_path=constants.BASE_MODEL_PATH)
+    tester.run_test()
