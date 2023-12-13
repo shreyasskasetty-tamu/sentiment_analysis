@@ -1,5 +1,76 @@
-# Yelp Restaurant Review Rating Semtiment Analysis using Transformer Models
+# Yelp Restaurant Review Rating Sentiment Analysis using Transformer Models
 Sentiment Analysis of Yelp Review Rating Dataset Using Transformer Models
+
+## Getting Started
+
+To begin, clone this repository to your local machine or download it as a zip file.
+Repository link: https://github.com/shreyasskasetty-tamu/sentiment_analysis
+
+## Contents
+
+This repository includes the following key components:
+
+1. **Jupyter Notebook:**
+   - `SentimentAnalysis.ipynb`: This notebook contains the code and explanations for the sentiment analysis model. It is located in the `notebooks` folder.
+
+2. **Documentation:**
+   - `ML_Sentiment_Analysis_Project.pdf`: A detailed report of the project, available in the `documentation` folder.
+   - `Sentiment Analysis CSCE 633.pptx`: PowerPoint presentation that provides an overview of the project, also located in the `documentation` folder.
+   - `ML Sentiment Analysis Project.zip`: Additional documentation resources packed in a zip file, found in the `documentation` folder.
+
+3. **Source Code:**
+   - Files like `app.py`, `train.py`, `test.py`, and others in the main directory for implementing and testing the model.
+
+4. **Video Presentation:**
+   - Video presentation can be found in the `video` directory. It needs to be downloaded inorder to be viewed.
+   - The video can also be accessed from the drive link: https://drive.google.com/file/d/1pebGJGJstYnneGskbhgFpcCtzC-JiF9X/view?usp=drive_link
+   - 
+
+5. **Data:**
+   - The `dataset` directory contains the data used for training and testing the model.
+
+6. **Best Model Weights:**
+   - Best Model weights can be found in the drive link: https://drive.google.com/file/d/1HG1xaWLq7BCJrVdC40yeqnlvdLzJBy_b/view?usp=drive_link. This model can be used in the test script to get the performance of the model. The test scripts also outputs graph plots for visualization.
+
+## How to Use
+
+### Jupyter Notebook
+- Navigate to the `notebooks` folder.
+- Open `SentimentAnalysis.ipynb` in a Jupyter environment to view and run the code.
+
+### Documentation
+- Reports and presentations can be found under the `documentation` folder.
+- You can open the PDF and PPT files with any compatible reader.
+
+# Usage
+
+To use this project for sentiment analysis of Yelp restaurant reviews, follow these steps:
+
+## Prerequisites
+- Ensure you have Python installed on your system.
+- Install necessary libraries such as PyTorch, Transformers, and Pandas. These can be installed via pip or conda.
+
+## Data Preparation
+- The model requires preprocessed Yelp restaurant review data. Follow the preprocessing steps outlined in the `data_augment.py` and `dataset.py` scripts.
+- The repository already has preprocessed dataset in the dataset directory. Path for different dataset can be assigned in the constants file for the constant `BALANCED_DATASET_PATH`
+
+## Training and Testing the Model
+
+This project includes scripts for training and testing the sentiment analysis model. Follow these instructions to run these processes.
+
+### Training the Model
+
+To train the model, use the following command:
+
+```bash
+python train.py -t <model_type>
+```
+
+To train the model, use the following command:
+
+```bash
+python test.py -m <model_path> -t <model_type>
+```
 
 # Introduction
 
@@ -84,22 +155,3 @@ Experiments were conducted with and without dataset augmentation and balancing, 
 ## Conclusion
 
 The RoBERTa-GRU hybrid model demonstrates strong performance in sentiment analysis of Yelp reviews, with optimal hyperparameters enhancing the learning efficiency and overall model performance.
-# Usage
-
-To use this project for sentiment analysis of Yelp restaurant reviews, follow these steps:
-
-## Prerequisites
-- Ensure you have Python installed on your system.
-- Install necessary libraries such as PyTorch, Transformers, and Pandas. These can be installed via pip or conda.
-
-## Data Preparation
-- The model requires preprocessed Yelp restaurant review data. Follow the preprocessing steps outlined in the `data_augment.py` and `dataset.py` scripts.
-
-## Running the Models
-1. **RoBERTa-Simple Model**:
-   - To train the RoBERTa-Simple model, execute the `train.py` script with specified flags for the RoBERTa-Simple model
-   - Use the `test.py` script to evaluate the model on the test dataset.
-
-2. **RoBERTa-GRU Model**:
-   - Run the `train.py` script with specified flags for the RoBERTa-GRU model.
-   - Test the model using the `test.py` script, which will output performance metrics.
