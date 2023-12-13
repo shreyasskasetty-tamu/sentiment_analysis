@@ -1,5 +1,5 @@
 import os
-import config
+import constants
 import torch
 import nltk
 import regex as re
@@ -29,8 +29,8 @@ class BERTDataset:
         # target: List or series of target labels
         self.review = review
         self.target = target
-        self.tokenizer = config.BERT_TOKENIZER  # Tokenizer specific to BERT
-        self.max_len = config.MAX_LEN  # Maximum sequence length
+        self.tokenizer = constants.BERT_TOKENIZER  # Tokenizer specific to BERT
+        self.max_len = constants.MAX_LEN  # Maximum sequence length
 
     def __len__(self):
         # Returns the length of the dataset
@@ -73,8 +73,8 @@ class RoBERTaDataset:
         # target: List or series of target labels
         self.review = review
         self.target = target
-        self.tokenizer = config.ROBERTA_TOKENIZER  # Tokenizer specific to RoBERTa
-        self.max_len = config.MAX_LEN  # Maximum sequence length
+        self.tokenizer = constants.ROBERTA_TOKENIZER  # Tokenizer specific to RoBERTa
+        self.max_len = constants.MAX_LEN  # Maximum sequence length
 
     def __len__(self):
         # Returns the length of the dataset
@@ -207,7 +207,7 @@ class DatasetPreprocessor:
         # Downlaod stop words in English Language
         print("3. Removing Stop Words")
 
-        self.download_stopwords(config.STOP_WORDS_DOWNLOAD_PATH)
+        self.download_stopwords(constants.STOP_WORDS_DOWNLOAD_PATH)
         
         english_stopwords = stopwords.words('english')
         

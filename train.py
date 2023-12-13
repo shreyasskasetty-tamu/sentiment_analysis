@@ -21,7 +21,7 @@ from transformers import AdamW
 from transformers import get_linear_schedule_with_warmup
 
 class Trainer:
-    def __init__(self, config, base_path, dataset, log_dir="./",device = 'cuda'):
+    def __init__(self, config, base_path, dataset, log_dir="./",device = 'cpu'):
         self.dataset = dataset
         self.config = config
         self.training_accuracies = []

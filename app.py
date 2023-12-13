@@ -1,4 +1,4 @@
-import config
+import constants
 import torch
 import flask
 import time
@@ -12,13 +12,13 @@ import torch.nn as nn
 app = Flask(__name__)
 
 MODEL = None
-DEVICE = config.DEVICE
+DEVICE = constants.DEVICE
 PREDICTION_DICT = dict()
 
 
 def sentence_prediction(sentence):
-    tokenizer = config.ROBERTA_TOKENIZER
-    max_len = config.MAX_LEN
+    tokenizer = constants.ROBERTA_TOKENIZER
+    max_len = constants.MAX_LEN
     review = str(sentence)
     review = " ".join(review.split())
 
@@ -66,7 +66,7 @@ def predict():
 
 if __name__ == "__main__":
     MODEL = RoBERTaGRUModel()
-    MODEL.load_state_dict(torch.load(config.MODEL_PATH,map_location='cpu'))
+    MODEL.load_state_dict(torch.load(constants.MODEL_PATH,map_location='cpu'))
     MODEL.to(DEVICE)
     MODEL.eval()
     app.run(host="0.0.0.0", port="9999")
