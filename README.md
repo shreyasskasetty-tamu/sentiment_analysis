@@ -66,7 +66,7 @@ To train the model, use the following command:
 python train.py -t <model_type>
 ```
 
-To train the model, use the following command:
+To test the model, use the following command:
 
 ```bash
 python test.py -m <model_path> -t <model_type>
